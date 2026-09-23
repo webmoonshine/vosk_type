@@ -189,6 +189,7 @@ def transcribe():
                       file=sys.stderr)
 
         recognized_text = " ".join(texts)
+        recognized_text = restore_punctuation(recognized_text)
 
     except Exception as e:
         print(f"⚠️  Ошибка распознавания: {e}", file=sys.stderr)
@@ -198,6 +199,61 @@ def transcribe():
         TEMP_WAV.unlink(missing_ok=True)
     except Exception:
         pass
+
+
+# ─── ПУНКТУАЦИЯ ──────────────────────────────────────────────────────────────
+
+def restore_punctuation(text: str) -> str:
+    """Восстанавливает базовые знаки препинания эвристиками."""
+    if not text:
+        return text
+
+    end_words = {
+        "да", "нет", "так", "вот", "ага", "ну", "ладно",
+        "пожалуйста", "спасибо", "окей", "хорошо", "конечно",
+        "стоп", "хватит", "готово", "понятно", "ясно",
+        "именно", "верно", "правильно",
+    }
+
+    question_words = {
+        "что", "кто", "где", "когда", "куда", "откуда",
+        "почему", "зачем", "как", "сколько", "какой",
+        "какая", "какие", "какое", "чей", "чья", "чьё",
+        "неужели", "разве", "ли",
+    }
+
+    words = text.split()
+    if not words:
+        return text
+
+    result = []
+    sentence_start = True
+
+    for i, word in enumerate(words):
+        is_first_word = (i == 0) or sentence_start
+        is_last_word = (i == len(words) - 1)
+
+        if sentence_start:
+            word = word.capitalize()
+            sentence_start = False
+
+        word_lower = word.lower().strip("«»\"'.,!?-:;")
+
+        if word_lower in end_words and not is_last_word:
+            word = word + "."
+            sentence_start = True
+
+        result.append(word)
+
+    last = result[-1]
+    if not last[-1] in ".!?":
+        result[-1] = last + "."
+
+    text = " ".join(result)
+    text = text.replace("..", ".")
+    text = text.replace(". .", ".")
+
+    return text
 
 
 # ─── ВВОД ТЕКСТА ─────────────────────────────────────────────────────────────

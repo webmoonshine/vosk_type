@@ -175,6 +175,79 @@ def recognition_worker():
         recognized_text += final["text"]
 
     recognized_text = recognized_text.strip()
+    recognized_text = restore_punctuation(recognized_text)
+
+
+# ─── ПУНКТУАЦИЯ ──────────────────────────────────────────────────────────────
+
+def restore_punctuation(text: str) -> str:
+    """Восстанавливает базовые знаки препинания эвристиками."""
+    if not text:
+        return text
+
+    # Слова-маркеры конца предложения
+    end_words = {
+        "да", "нет", "так", "вот", "ага", "ну", "ладно",
+        "пожалуйста", "спасибо", "окей", "хорошо", "конечно",
+        "стоп", "хватит", "готово", "понятно", "ясно",
+        "именно", "верно", "правильно",
+    }
+
+    question_words = {
+        "что", "кто", "где", "когда", "куда", "откуда",
+        "почему", "зачем", "как", "сколько", "какой",
+        "какая", "какие", "какое", "чей", "чья", "чьё",
+        "неужели", "разве", "ли",
+    }
+
+    words = text.split()
+    if not words:
+        return text
+
+    result = []
+    sentence_start = True
+
+    for i, word in enumerate(words):
+        is_first_word = (i == 0) or sentence_start
+        is_last_word = (i == len(words) - 1)
+        prev_word = words[i - 1].lower().strip("«»\"'.,!?-:;") if i > 0 else ""
+
+        # Первое слово предложения — с заглавной
+        if sentence_start:
+            word = word.capitalize()
+            sentence_start = False
+
+        word_lower = word.lower().strip("«»\"'.,!?-:;")
+
+        # Вопросительное предложение
+        if word_lower in question_words and (is_last_word or is_first_word):
+            question = True
+            for j in range(i, len(words)):
+                w = words[j].lower().strip("«»\"'.,!?-:;")
+                if w in question_words or w == "?":
+                    continue
+                if w in end_words:
+                    question = False
+                    break
+
+        # Точка после слов-маркеров
+        if word_lower in end_words and not is_last_word:
+            word = word + "."
+            sentence_start = True
+
+        result.append(word)
+
+    # Последнее слово — точка
+    last = result[-1]
+    if not last[-1] in ".!?":
+        result[-1] = last + "."
+
+    # Объединяем и чистим двойные знаки
+    text = " ".join(result)
+    text = text.replace("..", ".")
+    text = text.replace(". .", ".")
+
+    return text
 
 
 # ─── ВВОД ТЕКСТА ─────────────────────────────────────────────────────────────
