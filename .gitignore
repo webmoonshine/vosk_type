@@ -4,6 +4,7 @@ vosk-env/
 # Vosk model files (download separately)
 vosk-model-small-ru-0.22/
 vosk-model-ru-0.42/
+vosk-recasepunc-ru-0.22/
 *.zip
 
 # Audio test files
@@ -15,7 +16,18 @@ vosk-model-ru-0.42/
 *.log
 
 # Other
+pubmed-venv/
+punctuation_model/
+startfromtray/
 thunderbird-mcp/
 __pycache__/
 *.pyc
 .DS_Store
+checkpoint
+recasepunc.py
+
+# Misc
+1Cv8-KA-FMRUS.cf
+init_headers.txt
+restart-dsh.sh
+проверка.txt
