@@ -1,0 +1,21 @@
+# Python venv
+vosk-env/
+
+# Vosk model files (download separately)
+vosk-model-small-ru-0.22/
+vosk-model-ru-0.42/
+*.zip
+
+# Audio test files
+*.wav
+*.raw
+*.mp4
+
+# Logs
+*.log
+
+# Other
+thunderbird-mcp/
+__pycache__/
+*.pyc
+.DS_Store
