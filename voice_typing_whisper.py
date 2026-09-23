@@ -33,7 +33,7 @@ from pynput import keyboard
 # ─── НАСТРОЙКИ ───────────────────────────────────────────────────────────────
 
 HOTKEY = keyboard.Key.ctrl_r        # Клавиша push-to-talk
-WHISPER_MODEL = "base"              # tiny / base / small / medium / large-v3
+WHISPER_MODEL = "small"             # tiny / base / small / medium / large-v3
 DEVICE = "cpu"                      # cpu или cuda
 COMPUTE_TYPE = "int8"               # int8 / float16 / float32 (int8 быстрее на CPU)
 LANGUAGE = "ru"                     # язык распознавания
@@ -269,9 +269,13 @@ def on_release(key):
         transcribe()
         elapsed = time.time() - start_time
 
-        print(f"📝 Распознано за {elapsed:.1f}с: «{recognized_text}»",
-              file=sys.stderr)
-        type_text(recognized_text)
+        if recognized_text:
+            print(f"📝 Распознано за {elapsed:.1f}с: «{recognized_text}»",
+                  file=sys.stderr)
+            type_text(recognized_text)
+        else:
+            print(f"⚠️  Ничего не распознано (тишина?) за {elapsed:.1f}с",
+                  file=sys.stderr)
 
     if key == keyboard.Key.esc:
         print("\n👋 Выход по Esc.", file=sys.stderr)

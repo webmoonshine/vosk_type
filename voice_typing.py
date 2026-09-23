@@ -24,7 +24,7 @@ from pynput import keyboard
 # ─── НАСТРОЙКИ ───────────────────────────────────────────────────────────────
 
 HOTKEY = keyboard.Key.ctrl_r       # Клавиша push-to-talk
-MODEL_PATH = "vosk-model-small-ru-0.22"
+MODEL_PATH = "vosk-model-ru-0.42"    # Папка с моделью
 SAMPLE_RATE = 16000                # Vosk работает на 16 кГц
 
 # ─── X11 CLIPBOARD ───────────────────────────────────────────────────────────
@@ -149,17 +149,24 @@ def recognition_worker():
             else:
                 partial = json.loads(rec.PartialResult())
                 if partial.get("partial"):
-                    print(f"  💬 {partial['partial']}", end="\r", file=sys.stderr)
+                    # Используем пробелы чтобы затереть предыдущую строку
+                    print(f"  💬 {partial['partial']:<50}", end="\r", file=sys.stderr)
         except Exception as e:
             if recording:
                 print(f"⚠️  Ошибка чтения: {e}", file=sys.stderr)
             break
 
-    # Финальный остаток
+    # Финальный остаток — читаем всё что осталось в пайпе
+    remaining = b""
     try:
-        remaining = rec_process.stdout.read(16000 * 2) if rec_process and rec_process.stdout else b""
+        while True:
+            chunk = rec_process.stdout.read(16000 * 2)
+            if not chunk:
+                break
+            remaining += chunk
     except Exception:
-        remaining = b""
+        pass
+
     if remaining:
         rec.AcceptWaveform(remaining)
 
@@ -237,13 +244,21 @@ def on_release(key):
     if key == HOTKEY and recording:
         recording = False
 
+        # 1. Даём пайпу дописаться до распознавателя
+        time.sleep(0.3)
+
+        # 2. Закрываем пайп со стороны pw-record (останавливаем процесс)
         stop_recording()
 
+        # 3. Ждём завершения потока распознавания
         if reader_thread is not None:
-            reader_thread.join(timeout=3)
+            reader_thread.join(timeout=5)
 
-        print(f"\n📝 Распознано: «{recognized_text}»", file=sys.stderr)
-        type_text(recognized_text)
+        if recognized_text:
+            print(f"\n📝 Распознано: «{recognized_text}»", file=sys.stderr)
+            type_text(recognized_text)
+        else:
+            print(f"\n⚠️  Ничего не распознано (тишина?)", file=sys.stderr)
 
     # Esc — выход
     if key == keyboard.Key.esc:
